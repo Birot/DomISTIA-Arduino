@@ -9,17 +9,18 @@ byte macArduino[] = {
   0x90, 0xA2, 0xDA, 0x00, 0x1D, 0xA7 };
 String strMacArduino="90:A2:DA:00:1D:A7";
 // l'adresse IP de l'Arduino
-IPAddress ipArduino(192,168,2,3);
+IPAddress ipArduino(172,20,82,176);
+String stringIpArduino = "172.20.82.176";
 // son identifiant=IP
-String idArduino="192.168.2.3";
+String idArduino="Porsche Cayenne";
 // port du serveur Arduino
 int portArduino=102;
 // description de l'Arduino
-String descriptionArduino="duemilanove";
+String descriptionArduino="Une voiture puissante";
 // le serveur Arduino travaillera sur le port 102
 EthernetServer server(portArduino);
 // IP du serveur d'enregistrement
-IPAddress ipServeurEnregistrement(192,168,2,1); 
+IPAddress ipServeurEnregistrement(172,20,82,173); 
 // port du serveur d'enregistrement
 int portServeurEnregistrement=100;
 // le client Arduino du serveur d'enregistrement
@@ -48,7 +49,7 @@ void loop()
       // suivi
       Serial.println(F("Connecte..."));
       // on envoie l'adresse Mac de l'Arduino, une description de ses fonctionnalit�s, son port de service
-      String msg="{\"id\":\""+idArduino+"\",\"desc\":\""+descriptionArduino+"\",\"mac\":\""+strMacArduino+"\",\"port\":"+portArduino+"}";
+      String msg="{\"id\":\""+idArduino+"\",\"desc\":\""+descriptionArduino+"\",\"mac\":\""+strMacArduino+"\",\"port\":"+portArduino+",\"ip\":\""+stringIpArduino+"\"}";
       clientArduino.println(msg);
       Serial.print(F("enregistrement : "));
       Serial.println(msg);
