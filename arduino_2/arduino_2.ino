@@ -9,10 +9,10 @@ byte macArduino[] = {
   0x90, 0xA2, 0xDA, 0x00, 0x1D, 0xA7 };
 String strMacArduino="90:A2:DA:00:1D:A7";
 // l'adresse IP de l'Arduino
-IPAddress ipArduino(172,20,82,167);
-String stringIpArduino = "172.20.82.167";
+IPAddress ipArduino(172,20,82,168);
+String stringIpArduino = "172.20.82.168";
 // son identifiant=IP
-String idArduino="pierreRo";
+String idArduino="guytoune";
 // port du serveur Arduino
 int portArduino=102;
 // description de l'Arduino
@@ -103,7 +103,7 @@ void loop()
         continue;
       }
       // sinon on la traite
-      traiterCommande(&client,commande);
+      traiterCommande(&client,&commande);
       // m�moire disponible
       Serial.print(F("Memoire disponible fin boucle : "));
       Serial.println(freeRam());
@@ -123,12 +123,12 @@ void loop()
 }
 
 // traitement d'une commande
-void traiterCommande(EthernetClient *client, String commande){
+void traiterCommande(EthernetClient *client, String *commande){
   // on d�code la commande pour voir quelle action est demand�e
   // on peut d�clarer dynamiquement un tableau de caract�res
-  int l = commande.length();
+  int l = (*commande).length();
   char cmd[l+1];
-  commande.toCharArray(cmd, l+1);
+  (*commande).toCharArray(cmd, l+1);
   // on parse la commande
   aJsonObject* json=aJson.parse(cmd);
   // pb ?
@@ -252,7 +252,7 @@ String reponse(String id, String erreur, String etat){
     etat="{}";
   }
   // construction de la r�ponse
-  String reponse="{\"id\":\""+id+"\",\"er\":\""+erreur+"\",\"et\":\""+etat+"\"}";
+  String reponse="{\"id\":\""+id+"\",\"er\":\""+erreur+"\",\"et\":"+etat+"}";
 
   // r�sultat
   return reponse;
@@ -276,28 +276,42 @@ void doClignoter(EthernetClient *client,char * strId, aJsonObject* parametres){
   }
   // valeur de la pin � eteindre
   int led=atoi(pin->valuestring);
+  if(!isNumber(pin)   || led < 1 || led > 13) {
+    sendReponse(client, reponse(strId,"203",NULL));
+    return;
+  }
   Serial.print(F("clignoter led="));
   Serial.println(led);
   // il faut la dur�e d'un clignotement
   aJsonObject* dur = aJson.getObjectItem(parametres, "dur");
   if(dur==NULL){
     // r�ponse d'erreur
-    sendReponse(client, reponse(strId,"211",NULL));
+    sendReponse(client, reponse(strId,"204",NULL));
     return;
   }
   // valeur de la dur�e
   int duree=atoi(dur->valuestring);
+  
+  if(!isNumber(dur)   || duree < 100 || duree > 2000) {
+    sendReponse(client, reponse(strId,"205",NULL));
+    return;
+  }
   Serial.print(F("duree="));
   Serial.println(duree);
   // il faut le nombre de clignotements
+    
   aJsonObject* nb = aJson.getObjectItem(parametres, "nb");
   if(nb==NULL){
     // r�ponse d'erreur
-    sendReponse(client, reponse(strId,"212",NULL));
+    sendReponse(client, reponse(strId,"206",NULL));
     return;
   }
   // valeur du nombre de clignotements
   int nbClignotements=atoi(nb->valuestring);
+  if(!isNumber(nb)   || nbClignotements < 2) {
+    sendReponse(client, reponse(strId,"207",NULL));
+    return;
+  }
   Serial.print(F("nb="));
   Serial.println(nbClignotements);
 
@@ -323,11 +337,12 @@ void doClignoter(EthernetClient *client,char * strId, aJsonObject* parametres){
  aJsonObject* pin = aJson.getObjectItem(parametres, "pin");
  if(pin==NULL){
  // r�ponse d'erreur
- sendReponse(client, reponse(strId,"201",NULL));
+ sendReponse(client, reponse(strId,"301",NULL));
  return;
  }
  // num�ro de la pin � �crire
  int pin2= atoi(pin->valuestring);
+ 
  // suivi
  Serial.print(F("pw pin="));
  Serial.println(pin2);
@@ -335,7 +350,7 @@ void doClignoter(EthernetClient *client,char * strId, aJsonObject* parametres){
  aJsonObject* val = aJson.getObjectItem(parametres, "val");
  if(val==NULL){
  // r�ponse d'erreur
- sendReponse(client, reponse(strId,"202",NULL));
+ sendReponse(client, reponse(strId,"302",NULL));
  return;
  }
  // valeur � �crire
@@ -347,16 +362,28 @@ int val2=atoi(val->valuestring);
 aJsonObject* mod = aJson.getObjectItem(parametres, "mod");
  if(mod==NULL){
  // r�ponse d'erreur
- sendReponse(client, reponse(strId,"203",NULL));
+ sendReponse(client, reponse(strId,"303",NULL));
  return;
  }
  char *mod2 =mod->valuestring;
  // ce doit �tre a (analogique) ou b (binaire)
  if(strcmp("b",mod2)!=0 && strcmp("a",mod2)!=0){
  // r�ponse d'erreur
- sendReponse(client, reponse(strId,"204",NULL));
+ sendReponse(client, reponse(strId,"304",NULL));
  return;
  }
+ 
+  //paramètre pin non numérique ou pas dans les bornes (selon mode binaire ou analogique): erreur 305
+  if(!isNumber(pin) || (strcmp(mod2, "b")==0 && (pin2 < 1 || pin2 > 13)) || (strcmp(mod2, "a")==0 && (pin2 < 0 || pin2 > 5)) ) {
+    sendReponse(client, reponse(strId,"305",NULL)); // réponse d'erreur
+    return;
+  }
+  //paramètre val non numérique ou pas dans les bornes (selon mode binaire ou analogique): erreur 306
+  if(!isNumber(val) || (strcmp(mod2, "b")==0 && (val2 < 0 || val2 > 1)) || (strcmp(mod2, "a")==0 && (val2 < 0 || val2 > 255)) ) {
+    sendReponse(client, reponse(strId,"306",NULL)); // réponse d'erreur
+    return;
+  }
+ 
  // c'est bon pas d'erreur
  sendReponse(client,reponse(strId,"0",NULL));
  // suivi
@@ -387,7 +414,7 @@ aJsonObject* mod = aJson.getObjectItem(parametres, "mod");
 aJsonObject* pin = aJson.getObjectItem(parametres, "pin");
  if(pin==NULL){
  // r�ponse d'erreur
- sendReponse(client, reponse(strId,"302",NULL));
+ sendReponse(client, reponse(strId,"402",NULL));
  return;
  }
  // num�ro de la pin � lire
@@ -399,16 +426,21 @@ aJsonObject* pin = aJson.getObjectItem(parametres, "pin");
  aJsonObject* mod = aJson.getObjectItem(parametres, "mod");
  if(mod==NULL){
  // r�ponse d'erreur
- sendReponse(client, reponse(strId,"303",NULL));
+ sendReponse(client, reponse(strId,"403",NULL));
  return;
  }
  char *mod2 =mod->valuestring;
  // ce doit �tre a (analogique) ou b (binaire)
  if(strcmp(mod2,"a")!=0 && strcmp(mod2,"b")!=0){
  // r�ponse d'erreur
- sendReponse(client, reponse(strId,"304",NULL));
+ sendReponse(client, reponse(strId,"404",NULL));
  return;
  }
+ 
+  if(!isNumber(pin) || (strcmp(mod2, "b")==0 && (pin2 < 1 || pin2 > 13)) || (strcmp(mod2, "a")==0 && (pin2 < 0 || pin2 > 5)) ) {
+    sendReponse(client, reponse(strId,"405",NULL)); // réponse d'erreur
+    return;
+  }
  // c'est bon pas d'erreur  
  // suivi
  Serial.print(F("pr mod="));
@@ -435,6 +467,15 @@ void sendReponse(EthernetClient *client, String message){
   Serial.print(F("reponse="));
   Serial.println(message);
 
+}
+
+boolean isNumber(aJsonObject *json) {
+   boolean isNum = false;
+   for(byte i=0; i < String(json->valuestring).length(); ++i) {
+     isNum = isDigit(String(json->valuestring).charAt(i));
+     if(!isNum) return false;
+   }
+   return isNum; 
 }
 
 // mémoire libre
