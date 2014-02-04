@@ -9,10 +9,10 @@ byte macArduino[] = {
   0x90, 0xA2, 0xDA, 0x00, 0x1D, 0xA7 };
 String strMacArduino="90:A2:DA:00:1D:A7";
 // l'adresse IP de l'Arduino
-IPAddress ipArduino(172,20,82,176);
-String stringIpArduino = "172.20.82.176";
+IPAddress ipArduino(172,20,82,167);
+String stringIpArduino = "172.20.82.167";
 // son identifiant=IP
-String idArduino="Porsche Cayenne";
+String idArduino="pierreRo";
 // port du serveur Arduino
 int portArduino=102;
 // description de l'Arduino
@@ -20,7 +20,7 @@ String descriptionArduino="Une voiture puissante";
 // le serveur Arduino travaillera sur le port 102
 EthernetServer server(portArduino);
 // IP du serveur d'enregistrement
-IPAddress ipServeurEnregistrement(172,20,82,173); 
+IPAddress ipServeurEnregistrement(172,20,82,166); 
 // port du serveur d'enregistrement
 int portServeurEnregistrement=100;
 // le client Arduino du serveur d'enregistrement
@@ -227,25 +227,7 @@ int connecte(EthernetClient *client, IPAddress serveurIP, int serveurPort) {
 // lecture d'une commande du serveur
 String lireCommande(EthernetClient *client){
   String commande="";
-  boolean currentLineIsBlank = true;
-/*  while(true){
-    if(client->available()){
-      char c= client->read();
-      if (c == '\n') {
-         // you're starting a new line
-         currentLineIsBlank = true;
-       } 
-       else if (c != '\r') {
-         // you've gotten a character on the current line
-         currentLineIsBlank = false;
-       }
-      
-      if (c == '\n' && currentLineIsBlank) {
-        break;
-      } 
-      commande+=c;
-    }
-  }*/  
+
  // on rend la commande
   while(client->available()){
     char c = client->read();
@@ -270,7 +252,7 @@ String reponse(String id, String erreur, String etat){
     etat="{}";
   }
   // construction de la r�ponse
-  String reponse="{\"id\":\""+id+"\",\"er\":\""+erreur+"\",\"et\":"+etat+"}";
+  String reponse="{\"id\":\""+id+"\",\"er\":\""+erreur+"\",\"et\":\""+etat+"\"}";
 
   // r�sultat
   return reponse;
